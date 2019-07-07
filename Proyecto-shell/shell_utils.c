@@ -36,6 +36,92 @@ int showHelp()
 
 }
 
+int otherCommands(char* stream_command)
+{
+    __pid_t rc = fork();
+    if (rc < 0)
+    {
+        fprintf(stderr,"Failed to create process child\n");
+        return -1;
+    }
+    else if ( rc == 0)
+    {
+        int first = 1;
+        int gotted = 0;
+        int wasCreated = 0;
+        char buffer[512];
+        strcpy(buffer,"/bin/");
+        char buffer2[512];
+        strcpy(buffer2,"");
+        for(int i = 0 ; i < sizeof(stream_command); i++)
+        {
+            
+
+            if(first == 1)
+            {
+                if('\t' == stream_command[i] || ' ' == stream_command[i])
+                {
+                    if(gotted == 1)
+                    {
+                        first = 0;
+                    }
+                }
+                else if('\0' == stream_command[i])
+                {
+                    break;
+                }
+                else if (gotted == 1)
+                {
+                    strncat(buffer,&stream_command[i],1);
+                }
+                else
+                {
+                    strncat(buffer,&stream_command[i],1);
+                    gotted = 1;
+                }
+            }
+            else if('\0' == stream_command[i])
+            {
+                break;
+            }
+            else
+            {
+                if('\t' != stream_command[i] || ' ' != stream_command[i])
+                {
+                    wasCreated = 1;
+                }
+                strncat(buffer2,&stream_command[i],1);
+            }
+        }
+        if(wasCreated == 1)
+        {
+            char *myargs[2];
+            myargs[0] = strdup(buffer);
+            myargs[1] = strdup(buffer2);
+            myargs[2] = NULL;
+            execv(myargs[0],myargs);
+            
+        }else
+        {
+            char *myargs[2];
+            myargs[0] = strdup(buffer);
+            myargs[1] = NULL;
+            execv(myargs[0],myargs);
+        }
+        
+    }
+    else
+    {
+        int status_code;
+        __pid_t rc_wait = wait(&status_code);
+        if(status_code != 0)
+        {
+            fprintf(stderr,"An Errror ocurred until read manual page");
+            return -1;
+        } 
+    }
+}
+
 int pauseOperation()
 {
     int back  = 1;

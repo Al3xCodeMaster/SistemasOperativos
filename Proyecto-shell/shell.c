@@ -116,9 +116,8 @@ int main(int argc, char* argv[])
                 dir(token,PWD);
             }
         }
-        //
         else{
-            
+            otherCommands(stream_command);
         }
         memset(stream_command,'\0',512);
 
