@@ -36,7 +36,7 @@ int showHelp()
 
 }
 
-int otherCommands(char* stream_command)
+int otherCommands(char* stream_command,int size)
 {
     __pid_t rc = fork();
     if (rc < 0)
@@ -53,7 +53,7 @@ int otherCommands(char* stream_command)
         strcpy(buffer,"/bin/");
         char buffer2[512];
         strcpy(buffer2,"");
-        for(int i = 0 ; i < sizeof(stream_command); i++)
+        for(int i = 0 ; i < size; i++)
         {
             
 
@@ -108,6 +108,7 @@ int otherCommands(char* stream_command)
             myargs[1] = NULL;
             execv(myargs[0],myargs);
         }
+        exit(0);
         
     }
     else
@@ -116,7 +117,7 @@ int otherCommands(char* stream_command)
         __pid_t rc_wait = wait(&status_code);
         if(status_code != 0)
         {
-            fprintf(stderr,"An Errror ocurred until read manual page");
+            fprintf(stderr,"Failed to create a new process");
             return -1;
         } 
     }

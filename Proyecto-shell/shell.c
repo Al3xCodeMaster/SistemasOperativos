@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include "shell_utils.h"
 
@@ -12,8 +13,21 @@ char *p;
 
 int main(int argc, char* argv[])
 {
+    
     char stream_command[512];
     getcwd(PWD, sizeof(PWD)); // Función de la libreria unistd que permite obtener el directorio de trabajo actual.
+    //FILE
+    int repeat = -1;
+    int itOpened = 0;
+    FILE * fp;
+    FILE * fpcopy;
+    FILE * fpcopy2;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int sizeF = 0;
+    //
+
     if(!(p = strrchr(argv[0],'/'))) // Función que se uso para saber desde donde se ejecutaba
     {
         strcpy(SHELL_PATH,p);
@@ -43,19 +57,76 @@ int main(int argc, char* argv[])
     printf("              ||----w||       \n");
     printf("              ||     ||     \n\n");
 
+    if(argc > 1)
+    {
+        
+        fp = fopen(argv[1],"r");
+        fpcopy = fopen(argv[1],"r");
+        fpcopy2 = fopen(argv[1],"r");
+
+        if(fp == NULL)
+        {
+            printf("Failed to read the file\n");
+            exit(EXIT_FAILURE);
+        }
+        fseek(fpcopy,0,SEEK_END);
+        sizeF = ftell(fpcopy);
+        itOpened = 1;
+        if(sizeF == 0)
+        {
+            printf("File is empty\n");
+            fclose(fp);
+            fclose(fpcopy);
+            
+        }
+        else
+        {
+            repeat = 0;
+            char c;
+            for(c = getc(fpcopy2); c != EOF; c = getc(fpcopy2))
+            {
+                if(c == '\n')
+                {
+                    repeat = repeat + 1;
+                }
+            }
+            
+        }
+        
+        
+        
+    }
+
     char stream_token[512];
     char *token;
     char delimitador[3] = " "; 
     do
     {
-        printf("$_ ");
-        scanf("%[^\n]s",stream_command);
-        fgetc(stdin);
-        fflush(stdin);
-        /////
-        strcpy(stream_token,stream_command);
-        token = strtok(stream_token,delimitador); 
-        ///// 
+        if(repeat == -1)
+        {
+            printf("$_ ");
+            scanf("%[^\n]s",stream_command);
+            fgetc(stdin);
+            fflush(stdin);
+            strcpy(stream_token,stream_command);
+            token = strtok(stream_token,delimitador); 
+        }
+        else if(repeat == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            fscanf(fp,"%[^\n]",stream_command);
+            read = getline(&line,&len,fp);
+            
+            strcpy(stream_token,stream_command);
+            token = strtok(stream_token,delimitador); 
+
+            repeat = repeat - 1;
+        }
+        
+        
         if(!strcmp("quit",stream_command))
         {
             printf("\n");
@@ -117,12 +188,21 @@ int main(int argc, char* argv[])
             }
         }
         else{
-            otherCommands(stream_command);
+            otherCommands(stream_command,sizeof(stream_command));
         }
         memset(stream_command,'\0',512);
 
 
     } while (1);
+
+    if(itOpened)
+    {
+        fclose(fp);
+        fclose(fpcopy);
+        if(line){
+        free(line);
+        }
+    }
     
 
     return 0;
