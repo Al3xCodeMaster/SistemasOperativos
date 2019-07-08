@@ -92,14 +92,16 @@ int main(int argc, char* argv[])
             }
             
         }
-        
-        
-        
+                    
     }
-
+    int  out = -1;
+    int in = -1;
+    char fileName[FILENAME_MAX];
+    //char redirectOut[] = ">";
+    //char redirectIn[3] = "<";
     char stream_token[512];
     char *token;
-    char delimitador[3] = " "; 
+    char delimitador[] = " "; 
     do
     {
         if(repeat == -1)
@@ -109,7 +111,27 @@ int main(int argc, char* argv[])
             fgetc(stdin);
             fflush(stdin);
             strcpy(stream_token,stream_command);
+            token = strchr(stream_token,'>');   
+
+            if(token != NULL)
+            {
+
+                // /*
+                token = strtok(stream_token,">");
+                strcpy(stream_command,token);
+                out = 0;
+                token = strtok(NULL,">");
+                if(token != NULL)
+                {
+                    strcpy(fileName,token);
+                }
+                // */
+                
+            }
+            strcpy(stream_token,stream_command);
             token = strtok(stream_token,delimitador); 
+
+            
         }
         else if(repeat == 0)
         {
@@ -142,7 +164,8 @@ int main(int argc, char* argv[])
         }
         else if(!strcmp("help",stream_command))
         {
-            showHelp();
+            showHelp(SHELL_PATH,sizeof(SHELL_PATH),out,fileName);
+            out = -1;
         }
         else if(!strcmp("pause",stream_command))
         {
@@ -174,24 +197,28 @@ int main(int argc, char* argv[])
         }
         else if(token != NULL && !strcmp("echo",token))
         {
-            echo(stream_command,sizeof(stream_command));
+            echo(stream_command,sizeof(stream_command),out,fileName);
+            out = -1;
         }
         else if(token != NULL && !strcmp("dir",token))
         {
             token = strtok(NULL," ");
             if(token == NULL)
             {
-                dir(NULL,PWD);
+                dir(NULL,PWD,out,fileName);
+                out = -1;
             }else
             {
-                dir(token,PWD);
+                dir(token,PWD,out,fileName);
+                out = -1;
             }
         }
         else{
-            otherCommands(stream_command,sizeof(stream_command));
+            otherCommands(stream_command,sizeof(stream_command),out,fileName);
+            out = -1;
         }
         memset(stream_command,'\0',512);
-
+        token = NULL;
 
     } while (1);
 

@@ -5,9 +5,14 @@
 #include <sys/wait.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
-int showHelp()
+int showHelp(char* HELP,int size,int out,char filename[])
 {
+    char PATH_MAN[size];
+    strcpy(PATH_MAN,HELP);
+    strcat(PATH_MAN,".help");
     __pid_t rc = fork();
     if(rc < 0 )
     {
@@ -15,10 +20,15 @@ int showHelp()
         return -1;
     }else if (rc == 0)
     {
+        if(out == 0)
+        {
+            close(STDOUT_FILENO);
+            open(filename,O_CREAT|O_WRONLY|O_TRUNC,0666);
+        }
         char *myargs[4];
         myargs[0] = strdup("more");
         myargs[1] = strdup("-6");
-        myargs[2] = strdup("man.help");
+        myargs[2] = strdup(PATH_MAN);
         myargs[3] = NULL;
         execvp(myargs[0],myargs);
     }else
@@ -27,7 +37,7 @@ int showHelp()
         __pid_t rc_wait = wait(&status_code);
         if(status_code != 0)
         {
-            fprintf(stderr,"An Errror ocurred until read manual page");
+            fprintf(stderr,"An Errror ocurred until read manual page\n   ");
             return -1;
         } 
     }
@@ -36,7 +46,7 @@ int showHelp()
 
 }
 
-int otherCommands(char* stream_command,int size)
+int otherCommands(char* stream_command,int size,int out,char filename[])
 {
     __pid_t rc = fork();
     if (rc < 0)
@@ -46,6 +56,11 @@ int otherCommands(char* stream_command,int size)
     }
     else if ( rc == 0)
     {
+        if(out == 0)
+        {
+            close(STDOUT_FILENO);
+            open(filename,O_CREAT|O_WRONLY|O_TRUNC,0666);
+        }
         int first = 1;
         int gotted = 0;
         int wasCreated = 0;
@@ -108,8 +123,6 @@ int otherCommands(char* stream_command,int size)
             myargs[1] = NULL;
             execv(myargs[0],myargs);
         }
-        exit(0);
-        
     }
     else
     {
@@ -145,37 +158,71 @@ int pauseOperation()
     return 0;
 }
 
-void echo(char stream_command[],int size)
+void echo(char stream_command[],int size,int out,char filename[])
 {
-    int enter = 1;
-            for(int i = 4; i < size; i++)
-            {   
-                if('\t' == stream_command[i] || ' ' == stream_command[i])
-                {   
-                    if(enter)
-                    {
-                        printf(" ");
-                        enter = 0;
-                    }
-                    
-                }
-                else if('\0' == stream_command[i])
-                {
-                    break;
-                }
-                else
-                {
-                    printf("%c",stream_command[i]);
-                    enter = 1;
-                }
-                
-            }
-            printf("\n");
-}
 
-void dir(char* directory,char defaultDir[])
+     __pid_t rc = fork();
+    if(rc < 0 )
+    {
+        fprintf(stderr,"Failed to create process child\n");
+        exit(EXIT_FAILURE);
+    }else if (rc == 0)
+    {
+        if (out == 0)
+        {
+            close(STDOUT_FILENO);
+            open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+        }
+        int enter = 1;
+        for (int i = 4; i < size; i++)
+        {
+            if ('\t' == stream_command[i] || ' ' == stream_command[i])
+            {
+                if (enter)
+                {
+                    printf(" ");
+                    enter = 0;
+                }
+            }
+            else if ('\0' == stream_command[i])
+            {
+                break;
+            }
+            else
+            {
+                printf("%c", stream_command[i]);
+                enter = 1;
+            }
+        }
+        printf("\n");
+        exit(0);
+    }else
+    {
+        int status_code;
+        __pid_t rc_wait = wait(&status_code);
+        if(status_code != 0)
+        {
+            fprintf(stderr,"An Errror ocurred to display echo");
+        }        
+    }
+}    
+    
+
+void dir(char* directory,char defaultDir[],int out,char filename[])
 {
-    DIR *dp;
+     __pid_t rc = fork();
+    if(rc < 0 )
+    {
+        fprintf(stderr,"Failed to create process child\n");
+        exit(EXIT_FAILURE);
+    }else if (rc == 0)
+    {
+        if (out == 0)
+        {
+            close(STDOUT_FILENO);
+            open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+        }
+        DIR *dp;
             struct dirent *ep;
 
             if(directory == NULL)
@@ -189,12 +236,22 @@ void dir(char* directory,char defaultDir[])
                 ep = readdir(dp);
                 while (ep = readdir(dp))
                 {
-                    printf("%s\t",ep->d_name);
+                    printf("%s\n",ep->d_name);
                 }
                 printf("\n");
                 (void) closedir(dp);                
             }else
             {
-                fprintf(stderr,"Can't open directory or directory does not exist\n");
+                exit(EXIT_FAILURE);
             }
+            exit(0);
+    }else
+    {
+        int status_code;
+        __pid_t rc_wait = wait(&status_code);
+        if(status_code != 0)
+        {
+            fprintf(stderr,"Can't open directory or directory does not exist\n");
+        }        
+    }
 }
